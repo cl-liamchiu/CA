@@ -30,7 +30,7 @@
 1. Download iverilog and gtkwave.
     ```bash
     sudo apt install iverilog # to execute the verilog code
-    
+
     sudo apt install gtkwave # to view the waveform
     ```
 
@@ -38,7 +38,7 @@
     ```bash
     cd lab1/lab1
     ```
-2. Use the following command to run the testbench and the result will be stored in `log` floder.
+2. Use the following command to run the testbench and the result will be stored in `lab1/lab1/log` floder.
     ```bash
     make
     ```
