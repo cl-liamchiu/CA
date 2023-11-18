@@ -51,7 +51,7 @@
 
     * Branch_o：這是一個 1-bit 信號，表示當前指令是否是 branch 指令（beq）。僅在 branch 指令（beq）時為 1。
 
-    根據指令的不同類型，Control 模組將這些控制信號設置為適當的值，以指導流水線中的各個模組執行正確的操作。
+    根據指令的不同類型，Control 模組將這些控制信號設置為適當的值，以指導 pipeline 中的各個模組執行正確的操作。
 
 * Forwarding_Unit.v
 
@@ -77,7 +77,7 @@
 
     如果 ID_EX_MemRead_i 為 1，且 RS1 或 RS2 的地址等於 ID_EX_RDaddr_i，這表示有 load use data hazard 產生，則 pipeline 需產生 Stall（Stall_o = 1）並且不執行任何操作（NoOp_o = 1），同時禁止 PC 的寫入（PCWrite_o = 0）。
 
-    如果以上條件都不滿足，模組將生成默認值，確保 NoOp_o 為 0、Stall_o 為 0，並允許 PC 的寫入（PCWrite_o 為 1）。這表示在這種情況下，流水線不受阻塞，並且可以正常執行操作。
+    如果以上條件都不滿足，模組將生成默認值，確保 NoOp_o 為 0、Stall_o 為 0，並允許 PC 的寫入（PCWrite_o 為 1）。這表示在這種情況下， pipeline 不受阻塞，並且可以正常執行操作。
 
 * Imm_Gen.v
 
@@ -108,11 +108,153 @@
     * 當 sel = 0 時，mux_o 的輸出是 src1_i。
     * 當 sel = 1 時，mux_o 的輸出是 src2_i。
 
+* IF_ID_Register.v
+
+    IF_ID_Register 模組接收時脈信號（clk_i）、重設信號（rst_i）、ID_FlushIF 信號、Stall 信號、指令輸入（instr_i）、PC 輸入（PC_i），並輸出指令（instr_o）和 PC（PC_o）。該模組在時脈信號上升或重設信號下降時進行操作。
+
+    * 當重設信號為 0 時，模組將輸出指令和 PC 都設為 0。
+    * 當 ID_FlushIF 信號為 1 時，表示需要清空 IF_ID_Register，同樣將輸出指令和 PC 設為 0。
+    * 當 Stall 信號為 1 時，模組保持原狀態，不進行任何操作。
+    * 在正常情況下，當沒有重設或清空信號時，模組將輸入的指令（instr_i）和 PC（PC_i）複製到輸出的指令（instr_o）和 PC（PC_o）。
+
+* ID_EX_Register.v
+
+    ID_EX_Register 模組接收時脈信號（clk_i）、重設信號（rst_i）、6 個控制信號（RegWrite_i、MemtoReg、MemRead、MemWrite、ALUOp、ALUSrc）、RS1 資料、RS2 資料、常數（immediate_i）、func7、func3、RS1 位址、RS2 位址、RD 位址等輸入，除了時脈信號（clk_i）、重設信號（rst_i）外，其餘信號皆有對應輸出。該模組在時脈信號上升或重設信號下降時進行操作。
+
+    * 當重設信號為 0 時，模組將輸出都設為 0。
+    * 在正常情況下，當沒有重設信號時，模組將輸入複製到對應的輸出。
+
+* EX_MEM_Register.v
+
+    EX_MEM_Register 模組接收時脈信號（clk_i）、重設信號（rst_i）、4 個控制信號（RegWrite_i、MemtoReg、MemRead、MemWrite）、ALU 計算結果（ALUResult_i）、ForwardB 資料、RD 位址等輸入，其中時脈信號（clk_i）、重設信號（rst_i）是輸入，其餘信號皆有對應輸出。該模組在時脈信號上升或重設信號下降時進行操作。
+
+    * 當重設信號為 0 時，模組將輸出都設為 0。
+    * 在正常情況下，當沒有重設信號時，模組將輸入複製到對應的輸出。
+
+* MEM_WB_Register.v
+
+    MEM_WB_Register 模組接收時脈信號（clk_i）、重設信號（rst_i）、2 個控制信號（RegWrite_i、MemtoReg_i）、ALU 計算結果（ALUResult_i）、記憶體資料（MemData_i）、RD 位址等輸入，除了時脈信號（clk_i）、重設信號（rst_i）外，其餘信號皆有對應輸出。該模組在時脈信號上升或重設信號下降時進行操作。
+
+    * 當重設信號為 0 時，模組將輸出都設為 0。
+    * 在正常情況下，當沒有重設信號時，模組將輸入複製到對應的輸出。
+
+
 * CPU.v
 
-    將所有 module 依照作業給的 datapath 串接起來。首先將 PC 的輸出分別傳給 Adder 和 Instruction_Memory，前者將 PC 的輸出加上常數 4，來指向下一個指令的位址；後者透過 PC 的輸出，找到對應位址的指令，並且將指令輸出。將 Instruction_Memory 的輸出分別拆解並傳給 Control、Registers、Sign_Extend 以及 ALU_Control。Control 依照輸入的 opcode 輸出對應的 control signal 給 Registers、MUX_ALUSrc 以及 ALU_Control。Registers 依照輸入的 register 編號，輸出 rs1 和 rs2 的值，並確認寫入的 register 編號。Sign_Extend 則是將輸入的 12-bit 數字 sign extend 成 32-bit 並輸出。而 Registers 的 rs2 和 Sign_Extend 輸出的值會經過 MUX_ALUSrc，並透過 Control 輸出的 control signal (ALU_src) 來決定要取哪個值輸出。再來 ALU 則會將 Registers 的 rs1 和 MUX_ALUSrc 的輸出進行運算，透過 ALU_Control 的輸出 (ALU_control) 來決定進行甚什運算。最後將 ALU 的輸出根據 Control 輸出的 control signal (RegWrite) 寫回 Registers。 
+    CPU 模組依照作業提供的 Data path 組成 pipeline CPU，每個 pipeline register 由一個模組表示，並以 pipeline 方式執行指令。以下是主要模組及其功能的解釋：
+
+    * IF_ID_Register：
+
+        * 目的：表示指令提取（IF）和指令解碼（ID）階段之間的 pipeline 寄存器。
+        * 輸入：clk_i，rst_i，ID_FlushIF，Stall，instr，pc_o
+        * 輸出：IF_ID_instr，IF_ID_PC
+    * ID_EX_Register：
+
+        * 目的：表示指令解碼（ID）和執行（EX）階段之間的 pipeline 寄存器。
+        * 輸入：clk_i，rst_i，控制信號，來自 IF_ID_Register 的數據
+        * 輸出：控制信號，ALU 操作的數據，寄存器數據等，供 EX 階段使用。
+    * EX_MEM_Register：
+
+        * 目的：表示執行（EX）和存儲器（MEM）階段之間的 pipeline 寄存器。
+        * 輸入：clk_i，rst_i，控制信號，來自 ID_EX_Register 的數據
+        * 輸出：控制信號，ALU 結果，供 MEM 階段使用的數據。
+    * MEM_WB_Register：
+
+        * 目的：表示存儲器（MEM）和寫回（WB）階段之間的 pipeline 寄存器。
+        * 輸入：clk_i，rst_i，控制信號，來自 EX_MEM_Register 的數據
+        * 輸出：控制信號，ALU結果，供 WB 階段使用的數據。
+    * MUX32_PC：
+
+        * 目的：選擇刷新的指令和分支地址之間，以確定下一個PC值。
+        * 輸入：ID_FlushIF，pc_i，branchAddr
+        * 輸出：muxPCResult
+    * PC：
+
+        * 目的：表示程序計數器模組，負責管理程序計數器。
+        * 輸入：clk_i，rst_i，PCWrite，pc_i
+        * 輸出：pc_o
+    * Adder（Add）：
+
+        * 目的：添加兩個值，用於計算下一個 PC 地址。
+        * 輸入：src1_i，src2_i
+        * 輸出：adder_o
+    * Instruction_Memory：
+
+        * 目的：表示指令存儲器，根據提供的地址提取指令。
+        * 輸入：addr_i
+        * 輸出：instr_o
+    * Hazard_Detection_Unit：
+
+        * 目的：檢測 pipeline 中的 hazard（例如，data hazard）並生成控制信號。
+        * 輸入：與指令和 pipeline 階段相關的各種信號
+        * 輸出：NoOp，Stall，PCWrite
+    * Control：
+
+        * 目的：根據指令的操作碼生成控制信號。
+        * 輸入：NoOp，opcode_i
+        * 輸出： pipeline 階段的各種控制信號。
+    * Registers：
+
+        * 目的：表示寄存器文件，處理讀寫操作。
+        * 輸入：與指令和 pipeline 階段相關的各種信號
+        * 輸出：RS1data_o，RS2data_o
+    * Branch_Detection_Unit：
+
+        * 目的：檢測分支並生成控制信號。
+        * 輸入：RS1data，RS2data
+        * 輸出：Branch，equal，ID_FlushIF
+    * Imm_Gen：
+
+        * 目的：根據指令生成即時值。
+        * 輸入：IF_ID_instr
+        * 輸出：immediate
+    * Forwarding_Unit：
+
+        * 目的：確定 data forwarding 路徑。
+        * 輸入：與指令和 pipeline 階段相關的各種信號
+        * 輸出：ForwardA，ForwardB
+    * MUX32_ForwardA/MUX32_ForwardB：
+
+        * 目的：根據 forwarding 信號選擇適當的數據來源。
+        * 輸入：ForwardA/ForwardB，數據來源
+        * 輸出：ForwardAData，ForwardBData
+    * MUX：
+
+        * 目的：選擇 ALU 輸入的數據來源。
+        * 輸入：ID_EX_ALUSrc，數據來源
+        * 輸出：MUXResult
+    * ALU_Control：
+
+        * 目的：根據控制信號確定 ALU 操作。
+        * 輸入：與指令和 pipeline 階段相關的各種信號
+        * 輸出：operation
+    * ALU：
+
+        * 目的：執行算術和邏輯操作。
+        * 輸入：operation，數據來源
+        * 輸出：ALUResult
+    * Data_Memory：
+
+        * 目的：表示數據存儲器，處理讀寫操作。
+        * 輸入：與指令和 pipeline 階段相關的各種信號
+        * 輸出：MemData
+    * MUX2：
+
+        * 目的：根據 MEM_WB_MemtoReg 選擇 ALU 結果和存儲器數據的寫回。
+        * 輸入：MEM_WB_MemtoReg，數據來源
+        * 輸出：RDdata
+
+    這些模組共同構成一個基本的 pipeline CPU，具有 hazard 檢測、控制單元、data forwarding 和存儲器操作。pipeline 階段包括指令提取（IF）、指令解碼（ID）、執行（EX）、存儲器（MEM）和寫回（WB）。
 
 ## 2.2. Difficulties Encountered and Solutions in This Lab
+
+* 因為這次新加了更多的模組，然後我意識到之前在 lab1 中 wire 的命名方式會讓我在實作 lab2 時容易搞混，主要是跟助教提供的模組中的命名方式不統一，因此我花了一些時間重新命名了 lab1 所有模組的 wire，並確保能夠成功執行，才進行 lab2 的實作。
+
+* 由於新加了 pipeline，所以會用到 clk 和 rst，但是我在 lab1 中並沒有使用 clk 和 rst，因此我在實作 lab2 時，花了一些時間研究 clk 和 rst 的用法，主要是透過觀察助教給的 supplied 模組，並參考助教提供的 testbench，才成功使用 clk 和 rst，而且這次在 testbench 中 Reset 一開始是 1，但在 lab1 中是 0，花了很久才發現這個問題，發現之後就修改一下程式碼就可以了。
+
+* 原本我針對每個指令都想使用獨立的 op_o（判斷 ALU 要使用哪種運算），但我原本在 lab1 中設定 op_o 為 3-bit，但是這次的指令超過 8 種，但因為我不想去修改 3-bit 的這個設定，後來想到的解法是其實有些指令是可以共用 op_o 的，例如 add、addi、lw 和 sw 可以共用，sub 和 beq 可以共用。
+
+* 其他的部分都沒有遇到太大的問題，如果有 test case 沒過，就先去看一下 output.txt 與正確解答哪邊不同，再去看一下波形圖，就可以找出問題所在。
 
 
 ## 2.3 Development Environment
