@@ -1,4 +1,4 @@
-module Equal_Unit
+module Branch_Detection_Unit
 (
     src1_i,
     src2_i,

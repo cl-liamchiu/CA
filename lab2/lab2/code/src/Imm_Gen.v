@@ -1,19 +1,19 @@
 module Imm_Gen
 (
-    imm_i,
+    instr_i,
     imm_o
 );
 
-input [31:0] imm_i;
+input [31:0] instr_i;
 output [31:0] imm_o;
 
 reg [31:0] imm_o;
 
 always @(*) begin
-    case (imm_i[6:0]) // opcode
-        7'b0100011: imm_o = {{20{imm_i[31]}}, imm_i[31:25], imm_i[11:7]}; // sw
-        7'b1100011: imm_o = {{20{imm_i[31]}}, imm_i[31], imm_i[7], imm_i[30:25], imm_i[11:8]}; // beq
-        default: imm_o = {{20{imm_i[31]}}, imm_i[31:20]};
+    case (instr_i[6:0]) // opcode
+        7'b0100011: imm_o = {{20{instr_i[31]}}, instr_i[31:25], instr_i[11:7]}; // sw
+        7'b1100011: imm_o = {{20{instr_i[31]}}, instr_i[31], instr_i[7], instr_i[30:25], instr_i[11:8]}; // beq
+        default: imm_o = {{20{instr_i[31]}}, instr_i[31:20]};
     endcase
 
 end

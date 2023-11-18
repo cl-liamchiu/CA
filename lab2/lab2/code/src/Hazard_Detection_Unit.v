@@ -1,7 +1,6 @@
 module Hazard_Detection_Unit
 (
     rst_i,
-    clk_i,
     RS1addr_i,
     RS2addr_i,
     ID_EX_RDaddr_i,
@@ -12,7 +11,6 @@ module Hazard_Detection_Unit
 );
 
 input rst_i;
-input clk_i;
 input [4:0] RS1addr_i;
 input [4:0] RS2addr_i;
 input [4:0] ID_EX_RDaddr_i;

@@ -39,178 +39,124 @@ wire equal;
 wire ID_FlushIF;
 
 // Pipeline registers
-reg [31:0] IF_ID_instr; // instruction
-reg [31:0] IF_ID_PC;
+wire [31:0] IF_ID_instr; // instruction
+wire [31:0] IF_ID_PC;
 
 // control signals
-reg ID_EX_RegWrite;
-reg ID_EX_MemtoReg;
-reg ID_EX_MemRead;
-reg ID_EX_MemWrite;
-reg [1:0] ID_EX_ALUOp;
-reg ID_EX_ALUSrc;
+wire ID_EX_RegWrite;
+wire ID_EX_MemtoReg;
+wire ID_EX_MemRead;
+wire ID_EX_MemWrite;
+wire [1:0] ID_EX_ALUOp;
+wire ID_EX_ALUSrc;
 
-reg [31:0] ID_EX_RS1data;
-reg [31:0] ID_EX_RS2data;
+wire [31:0] ID_EX_RS1data;
+wire [31:0] ID_EX_RS2data;
 
-reg [31:0] ID_EX_immediate;
+wire [31:0] ID_EX_immediate;
 
 // for ALU Control
-reg [6:0] ID_EX_func7;
-reg [2:0] ID_EX_func3;
+wire [6:0] ID_EX_func7;
+wire [2:0] ID_EX_func3;
 
 // for registers when writing back
-reg [4:0] ID_EX_RS1addr;
-reg [4:0] ID_EX_RS2addr;
-reg [4:0] ID_EX_RDaddr;
+wire [4:0] ID_EX_RS1addr;
+wire [4:0] ID_EX_RS2addr;
+wire [4:0] ID_EX_RDaddr;
 
-reg EX_MEM_RegWrite;
-reg EX_MEM_MemtoReg;
-reg EX_MEM_MemRead;
-reg EX_MEM_MemWrite;
+wire EX_MEM_RegWrite;
+wire EX_MEM_MemtoReg;
+wire EX_MEM_MemRead;
+wire EX_MEM_MemWrite;
 
-reg [31:0] EX_MEM_ALUResult;
-reg [31:0] EX_MEM_RS2data;
-reg [4:0] EX_MEM_RDaddr;
+wire [31:0] EX_MEM_ALUResult;
+wire [31:0] EX_MEM_RS2data;
+wire [4:0] EX_MEM_RDaddr;
 
-reg MEM_WB_RegWrite;
-reg MEM_WB_MemtoReg;
+wire MEM_WB_RegWrite;
+wire MEM_WB_MemtoReg;
 
-reg [31:0] MEM_WB_ALUResult;
-reg [31:0] MEM_WB_MemData;
-reg [4:0] MEM_WB_RDaddr;
+wire [31:0] MEM_WB_ALUResult;
+wire [31:0] MEM_WB_MemData;
+wire [4:0] MEM_WB_RDaddr;
 
-always @(posedge clk_i or negedge rst_i) begin
-    if (~rst_i) begin
-        IF_ID_instr <= 0;
-        IF_ID_PC <= 0;
-        ID_EX_RegWrite <= 0;
-        ID_EX_MemtoReg <= 0;
-        ID_EX_MemRead <= 0;
-        ID_EX_MemWrite <= 0;
-        ID_EX_ALUOp <= 0;
-        ID_EX_ALUSrc <= 0;
-        ID_EX_RS1data <= 0;
-        ID_EX_RS2data <= 0;
-        ID_EX_immediate <= 0;
-        ID_EX_func7 <= 0;
-        ID_EX_func3 <= 0;
-        ID_EX_RS1addr <= 0;
-        ID_EX_RS2addr <= 0;
-        ID_EX_RDaddr <= 0;
-        EX_MEM_RegWrite <= 0;
-        EX_MEM_MemtoReg <= 0;
-        EX_MEM_MemRead <= 0;
-        EX_MEM_MemWrite <= 0;
-        EX_MEM_ALUResult <= 0;
-        EX_MEM_RS2data <= 0;
-        EX_MEM_RDaddr <= 0;
-        MEM_WB_RegWrite <= 0;
-        MEM_WB_MemtoReg <= 0;
-        MEM_WB_ALUResult <= 0;
-        MEM_WB_MemData <= 0;
-        MEM_WB_RDaddr <= 0;
-    end
-    else if (ID_FlushIF) begin
-        IF_ID_instr <= 0;
-        IF_ID_PC <= 0;
+IF_ID_Register IF_ID_Register(
+    .clk_i(clk_i),
+    .rst_i(rst_i),
+    .ID_FlushIF_i(ID_FlushIF),
+    .Stall_i(Stall),
+    .instr_i(instr),
+    .PC_i(pc_o),
+    .instr_o(IF_ID_instr),
+    .PC_o(IF_ID_PC)
+);
 
-                ID_EX_RegWrite <= RegWrite;
-        ID_EX_MemtoReg <= MemtoReg;
-        ID_EX_MemRead <= MemRead;
-        ID_EX_MemWrite <= MemWrite;
-        ID_EX_ALUOp <= ALUOp;
-        ID_EX_ALUSrc <= ALUSrc;
-        ID_EX_RS1data <= RS1data;
-        ID_EX_RS2data <= RS2data;
-        ID_EX_immediate <= immediate;
-        ID_EX_func7 <= IF_ID_instr[31:25];
-        ID_EX_func3 <= IF_ID_instr[14:12];
-        ID_EX_RS1addr <= IF_ID_instr[19:15];
-        ID_EX_RS2addr <= IF_ID_instr[24:20];
-        ID_EX_RDaddr <= IF_ID_instr[11:7];
+ID_EX_Register ID_EX_Register(
+    .clk_i(clk_i),
+    .rst_i(rst_i),
+    .RegWrite_i(RegWrite),
+    .MemtoReg_i(MemtoReg),
+    .MemRead_i(MemRead),
+    .MemWrite_i(MemWrite),
+    .ALUOp_i(ALUOp),
+    .ALUSrc_i(ALUSrc),
+    .RS1data_i(RS1data),
+    .RS2data_i(RS2data),
+    .immediate_i(immediate),
+    .func7_i(IF_ID_instr[31:25]),
+    .func3_i(IF_ID_instr[14:12]),
+    .RS1addr_i(IF_ID_instr[19:15]),
+    .RS2addr_i(IF_ID_instr[24:20]),
+    .RDaddr_i(IF_ID_instr[11:7]),
+    .RegWrite_o(ID_EX_RegWrite),
+    .MemtoReg_o(ID_EX_MemtoReg),
+    .MemRead_o(ID_EX_MemRead),
+    .MemWrite_o(ID_EX_MemWrite),
+    .ALUOp_o(ID_EX_ALUOp),
+    .ALUSrc_o(ID_EX_ALUSrc),
+    .RS1data_o(ID_EX_RS1data),
+    .RS2data_o(ID_EX_RS2data),
+    .immediate_o(ID_EX_immediate),
+    .func7_o(ID_EX_func7),
+    .func3_o(ID_EX_func3),
+    .RS1addr_o(ID_EX_RS1addr),
+    .RS2addr_o(ID_EX_RS2addr),
+    .RDaddr_o(ID_EX_RDaddr)
+);
 
-        EX_MEM_RegWrite <= ID_EX_RegWrite;
-        EX_MEM_MemtoReg <= ID_EX_MemtoReg;
-        EX_MEM_MemRead <= ID_EX_MemRead;
-        EX_MEM_MemWrite <= ID_EX_MemWrite;
-        EX_MEM_ALUResult <= ALUResult;
-        EX_MEM_RS2data <= ForwardBData;
-        EX_MEM_RDaddr <= ID_EX_RDaddr;
+EX_MEM_Register EX_MEM_Register(
+    .clk_i(clk_i),
+    .rst_i(rst_i),
+    .RegWrite_i(ID_EX_RegWrite),
+    .MemtoReg_i(ID_EX_MemtoReg),
+    .MemRead_i(ID_EX_MemRead),
+    .MemWrite_i(ID_EX_MemWrite),
+    .ALUResult_i(ALUResult),
+    .ForwardBData_i(ForwardBData),
+    .RDaddr_i(ID_EX_RDaddr),
+    .RegWrite_o(EX_MEM_RegWrite),
+    .MemtoReg_o(EX_MEM_MemtoReg),
+    .MemRead_o(EX_MEM_MemRead),
+    .MemWrite_o(EX_MEM_MemWrite),
+    .ALUResult_o(EX_MEM_ALUResult),
+    .ForwardBData_o(EX_MEM_RS2data),
+    .RDaddr_o(EX_MEM_RDaddr)
+);
 
-        MEM_WB_RegWrite <= EX_MEM_RegWrite;
-        MEM_WB_MemtoReg <= EX_MEM_MemtoReg;
-        MEM_WB_ALUResult <= EX_MEM_ALUResult;
-        MEM_WB_MemData <= MemData;
-        MEM_WB_RDaddr <= EX_MEM_RDaddr;
-    end
-    else if (Stall) begin
-        IF_ID_instr <= IF_ID_instr;
-        IF_ID_PC <= IF_ID_PC;
-
-        ID_EX_RegWrite <= RegWrite;
-        ID_EX_MemtoReg <= MemtoReg;
-        ID_EX_MemRead <= MemRead;
-        ID_EX_MemWrite <= MemWrite;
-        ID_EX_ALUOp <= ALUOp;
-        ID_EX_ALUSrc <= ALUSrc;
-        ID_EX_RS1data <= RS1data;
-        ID_EX_RS2data <= RS2data;
-        ID_EX_immediate <= immediate;
-        ID_EX_func7 <= IF_ID_instr[31:25];
-        ID_EX_func3 <= IF_ID_instr[14:12];
-        ID_EX_RS1addr <= IF_ID_instr[19:15];
-        ID_EX_RS2addr <= IF_ID_instr[24:20];
-        ID_EX_RDaddr <= IF_ID_instr[11:7];
-
-        EX_MEM_RegWrite <= ID_EX_RegWrite;
-        EX_MEM_MemtoReg <= ID_EX_MemtoReg;
-        EX_MEM_MemRead <= ID_EX_MemRead;
-        EX_MEM_MemWrite <= ID_EX_MemWrite;
-        EX_MEM_ALUResult <= ALUResult;
-        EX_MEM_RS2data <= ForwardBData;
-        EX_MEM_RDaddr <= ID_EX_RDaddr;
-
-        MEM_WB_RegWrite <= EX_MEM_RegWrite;
-        MEM_WB_MemtoReg <= EX_MEM_MemtoReg;
-        MEM_WB_ALUResult <= EX_MEM_ALUResult;
-        MEM_WB_MemData <= MemData;
-        MEM_WB_RDaddr <= EX_MEM_RDaddr;
-    end
-    else begin
-        IF_ID_instr <= instr;
-        IF_ID_PC <= pc_o;
-
-        ID_EX_RegWrite <= RegWrite;
-        ID_EX_MemtoReg <= MemtoReg;
-        ID_EX_MemRead <= MemRead;
-        ID_EX_MemWrite <= MemWrite;
-        ID_EX_ALUOp <= ALUOp;
-        ID_EX_ALUSrc <= ALUSrc;
-        ID_EX_RS1data <= RS1data;
-        ID_EX_RS2data <= RS2data;
-        ID_EX_immediate <= immediate;
-        ID_EX_func7 <= IF_ID_instr[31:25];
-        ID_EX_func3 <= IF_ID_instr[14:12];
-        ID_EX_RS1addr <= IF_ID_instr[19:15];
-        ID_EX_RS2addr <= IF_ID_instr[24:20];
-        ID_EX_RDaddr <= IF_ID_instr[11:7];
-
-        EX_MEM_RegWrite <= ID_EX_RegWrite;
-        EX_MEM_MemtoReg <= ID_EX_MemtoReg;
-        EX_MEM_MemRead <= ID_EX_MemRead;
-        EX_MEM_MemWrite <= ID_EX_MemWrite;
-        EX_MEM_ALUResult <= ALUResult;
-        EX_MEM_RS2data <= ForwardBData;
-        EX_MEM_RDaddr <= ID_EX_RDaddr;
-
-        MEM_WB_RegWrite <= EX_MEM_RegWrite;
-        MEM_WB_MemtoReg <= EX_MEM_MemtoReg;
-        MEM_WB_ALUResult <= EX_MEM_ALUResult;
-        MEM_WB_MemData <= MemData;
-        MEM_WB_RDaddr <= EX_MEM_RDaddr;
-    end    
-end
+MEM_WB_Register MEM_WB_Register(
+    .clk_i(clk_i),
+    .rst_i(rst_i),
+    .RegWrite_i(EX_MEM_RegWrite),
+    .MemtoReg_i(EX_MEM_MemtoReg),
+    .ALUResult_i(EX_MEM_ALUResult),
+    .MemData_i(MemData),
+    .RDaddr_i(EX_MEM_RDaddr),
+    .RegWrite_o(MEM_WB_RegWrite),
+    .MemtoReg_o(MEM_WB_MemtoReg),
+    .ALUResult_o(MEM_WB_ALUResult),
+    .MemData_o(MEM_WB_MemData),
+    .RDaddr_o(MEM_WB_RDaddr)
+);
 
 
 MUX32 MUX32_PC(
@@ -251,7 +197,6 @@ Adder Add2(
 
 Hazard_Detection_Unit Hazard_Detection(
     .rst_i(rst_i),
-    .clk_i(clk_i),
     .RS1addr_i(IF_ID_instr[19:15]),
     .RS2addr_i(IF_ID_instr[24:20]),
     .ID_EX_RDaddr_i(ID_EX_RDaddr),
@@ -286,17 +231,8 @@ Registers Registers(
     .RS2data_o(RS2data)
 );
 
-// always @(posedge clk_i) begin
-//     if (RS1data == RS2data) begin
-//         equal <= 1'b1;
-//     end
-//     else begin
-//         equal <= 1'b0;
-//     end
-//     ID_FlushIF <= Branch & equal;
-// end
 
-Equal_Unit Equal_Unit(
+Branch_Detection_Unit Branch_Detection(
     .src1_i(RS1data),
     .src2_i(RS2data),
     .Branch_i(Branch),
@@ -306,7 +242,7 @@ Equal_Unit Equal_Unit(
 
 
 Imm_Gen Imm_Gen(
-    .imm_i(IF_ID_instr),
+    .instr_i(IF_ID_instr),
     .imm_o(immediate)
 );
 
