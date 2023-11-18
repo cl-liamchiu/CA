@@ -35,8 +35,8 @@ wire NoOp, Stall, PCWrite;
 wire Branch;
 wire [31:0] branchAddr;
 wire [31:0] muxPCResult;
-reg equal;
-reg ID_FlushIF;
+wire equal;
+wire ID_FlushIF;
 
 // Pipeline registers
 reg [31:0] IF_ID_instr; // instruction
@@ -114,6 +114,35 @@ always @(posedge clk_i or negedge rst_i) begin
     else if (ID_FlushIF) begin
         IF_ID_instr <= 0;
         IF_ID_PC <= 0;
+
+                ID_EX_RegWrite <= RegWrite;
+        ID_EX_MemtoReg <= MemtoReg;
+        ID_EX_MemRead <= MemRead;
+        ID_EX_MemWrite <= MemWrite;
+        ID_EX_ALUOp <= ALUOp;
+        ID_EX_ALUSrc <= ALUSrc;
+        ID_EX_RS1data <= RS1data;
+        ID_EX_RS2data <= RS2data;
+        ID_EX_immediate <= immediate;
+        ID_EX_func7 <= IF_ID_instr[31:25];
+        ID_EX_func3 <= IF_ID_instr[14:12];
+        ID_EX_RS1addr <= IF_ID_instr[19:15];
+        ID_EX_RS2addr <= IF_ID_instr[24:20];
+        ID_EX_RDaddr <= IF_ID_instr[11:7];
+
+        EX_MEM_RegWrite <= ID_EX_RegWrite;
+        EX_MEM_MemtoReg <= ID_EX_MemtoReg;
+        EX_MEM_MemRead <= ID_EX_MemRead;
+        EX_MEM_MemWrite <= ID_EX_MemWrite;
+        EX_MEM_ALUResult <= ALUResult;
+        EX_MEM_RS2data <= ForwardBData;
+        EX_MEM_RDaddr <= ID_EX_RDaddr;
+
+        MEM_WB_RegWrite <= EX_MEM_RegWrite;
+        MEM_WB_MemtoReg <= EX_MEM_MemtoReg;
+        MEM_WB_ALUResult <= EX_MEM_ALUResult;
+        MEM_WB_MemData <= MemData;
+        MEM_WB_RDaddr <= EX_MEM_RDaddr;
     end
     else if (Stall) begin
         IF_ID_instr <= IF_ID_instr;
@@ -196,7 +225,7 @@ PC PC(
     .clk_i(clk_i),
     .rst_i(rst_i),
     .PCWrite_i(PCWrite),
-    .pc_i(pc_i),
+    .pc_i(muxPCResult),
     .pc_o(pc_o)
 );
 
@@ -257,15 +286,24 @@ Registers Registers(
     .RS2data_o(RS2data)
 );
 
-always @(posedge clk_i) begin
-    if (RS1data == RS2data) begin
-        equal <= 1;
-    end
-    else begin
-        equal <= 0;
-    end
-    ID_FlushIF <= Branch & equal;
-end
+// always @(posedge clk_i) begin
+//     if (RS1data == RS2data) begin
+//         equal <= 1'b1;
+//     end
+//     else begin
+//         equal <= 1'b0;
+//     end
+//     ID_FlushIF <= Branch & equal;
+// end
+
+Equal_Unit Equal_Unit(
+    .src1_i(RS1data),
+    .src2_i(RS2data),
+    .Branch_i(Branch),
+    .is_equal_o(equal),
+    .flush_o(ID_FlushIF)
+);
+
 
 Imm_Gen Imm_Gen(
     .imm_i(IF_ID_instr),
