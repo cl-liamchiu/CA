@@ -7,8 +7,8 @@ module ALU
 );
 
 input [2:0] op_i;
-input [31:0] src1_i;
-input [31:0] src2_i;
+input signed [31:0] src1_i;
+input signed [31:0] src2_i;
 output [31:0] ALUResult_o;
 
 reg [31:0] tmpResult;
