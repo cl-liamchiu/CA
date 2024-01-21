@@ -1,4 +1,4 @@
-# CA
+# CA (Computer Architecture)
 
 ## hw1 and hw2 are **RISC-V assembly language** programs.
 * `hw1` is a simple calculator which can support the following operations: +, −, ×, /, min, ^, !
